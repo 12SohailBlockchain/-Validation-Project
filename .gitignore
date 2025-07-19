@@ -1,0 +1,23 @@
+# Environment files
+.env
+
+# Dependencies
+node_modules/
+yarn.lock
+
+# Build artifacts
+artifacts/
+cache/
+.vscode/
+
+# Logs
+*.log
+log.text
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
