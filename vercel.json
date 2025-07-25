@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "sabza-validation-system",
   "builds": [
     {
       "src": "api/server.js",
@@ -20,15 +19,5 @@
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }
-  ],
-  "env": {
-    "CONTRACT_ADDRESS": "@contract_address",
-    "QUICKNODE_URL": "@quicknode_url", 
-    "PRIVATE_KEY": "@private_key"
-  },
-  "functions": {
-    "api/server.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 } 
