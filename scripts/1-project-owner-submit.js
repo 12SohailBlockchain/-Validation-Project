@@ -6,25 +6,48 @@ async function uploadToIPFS(projectData) {
   const jsonString = JSON.stringify(projectData, null, 2);
   
   try {
-    // Use a simple HTTP request to upload to IPFS
-    const auth = Buffer.from(`${process.env.INFURA_IPFS_ID || 'demo'}:${process.env.INFURA_IPFS_SECRET || 'demo'}`).toString('base64');
+    // Use Pinata IPFS API
+    const pinataApiKey = 'e10a02a6d76e35d2d7c8';
+    const pinataSecretApiKey = '4d72f6c367603be5082a344da6f96244f86f9e9c2de292a0a93ea94686bf1123';
     
-    const response = await axios({
-      method: 'post',
-      url: 'https://ipfs.infura.io:5001/api/v0/add',
-      data: Buffer.from(jsonString),
+    const FormData = require('form-data');
+    const form = new FormData();
+    
+    // Create a readable stream from the JSON string
+    const Readable = require('stream').Readable;
+    const stream = new Readable();
+    stream.push(jsonString);
+    stream.push(null);
+    
+    form.append('file', stream, {
+      filename: 'project-metadata.json',
+      contentType: 'application/json'
+    });
+    
+    const pinataMetadata = JSON.stringify({
+      name: `Project-${projectData.tokenSymbol}-${Date.now()}`,
+      keyvalues: {
+        projectType: 'SABZA_Validation',
+        tokenSymbol: projectData.tokenSymbol
+      }
+    });
+    form.append('pinataMetadata', pinataMetadata);
+    
+    const response = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', form, {
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/json'
-      },
-      params: {
-        'pin': 'true'
+        ...form.getHeaders(),
+        'pinata_api_key': pinataApiKey,
+        'pinata_secret_api_key': pinataSecretApiKey,
       }
     });
     
-    return response.data.Hash;
+    console.log("✅ Successfully uploaded to Pinata IPFS!");
+    console.log("📋 IPFS Hash:", response.data.IpfsHash);
+    console.log("🔗 IPFS URL:", `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`);
+    
+    return response.data.IpfsHash;
   } catch (error) {
-    console.log("⚠️  Infura IPFS not available, using mock CID for testing");
+    console.log("⚠️  Pinata IPFS upload failed, using mock CID for testing");
     console.log("   Error:", error.message);
     // Generate a mock CID for testing when IPFS is not available
     const hash = crypto.createHash('sha256').update(jsonString).digest('hex');

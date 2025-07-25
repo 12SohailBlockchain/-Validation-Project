@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHA-256 Hash Calculator - SABZA Validation</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            margin: 0;
+        }
+        
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin: 30px 0;
+            background: #f8f9fa;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #5a6fd8;
+            background: #e8f4f8;
+        }
+        
+        .upload-area.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-text {
+            color: #667eea;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .result-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .hash-result {
+            font-family: monospace;
+            font-size: 14px;
+            word-break: break-all;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+            margin: 10px 0;
+        }
+        
+        .file-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            color: #333;
+        }
+        
+        .example-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 10px;
+            border-left: 4px solid #17a2b8;
+        }
+        
+        .copy-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #218838;
+        }
+        
+        .verification-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 10px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .verify-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        
+        .verify-result {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .match {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+        
+        .no-match {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 SHA-256 Hash Calculator</h1>
+            <p>Calculate and verify SHA-256 hashes for SABZA project validation</p>
+        </div>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div class="upload-text">
+                📁 Click here or drag & drop a file to calculate its SHA-256 hash
+            </div>
+            <input type="file" id="fileInput" class="file-input" onchange="handleFile(this.files[0])">
+        </div>
+        
+        <div id="fileInfo" style="display: none;">
+            <div class="result-section">
+                <h3>📊 File Information</h3>
+                <div class="file-info">
+                    <div class="info-item">
+                        <div class="info-label">File Name</div>
+                        <div class="info-value" id="fileName"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">File Size</div>
+                        <div class="info-value" id="fileSize"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">File Type</div>
+                        <div class="info-value" id="fileType"></div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Last Modified</div>
+                        <div class="info-value" id="fileModified"></div>
+                    </div>
+                </div>
+                
+                <h3>🔐 SHA-256 Hash</h3>
+                <div class="hash-result" id="hashResult">
+                    Calculating hash...
+                </div>
+                <button class="copy-btn" onclick="copyHash()">📋 Copy Hash</button>
+            </div>
+        </div>
+        
+        <div class="verification-section">
+            <h3>✅ Verify Against Expected Hash</h3>
+            <p>Enter the expected hash to compare with your calculated hash:</p>
+            <input type="text" id="expectedHash" class="verify-input" placeholder="Enter expected SHA-256 hash (e.g., 71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd)" onchange="compareHashes()">
+            <div id="verificationResult"></div>
+        </div>
+        
+        <div class="example-section">
+            <h3>📝 Example: SOLAR24 Project</h3>
+            <p><strong>Project:</strong> solar_1753173315014</p>
+            <p><strong>Expected Hash:</strong> <code>71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd</code></p>
+            <p><strong>IPFS Document:</strong> <a href="https://gateway.pinata.cloud/ipfs/QmdgWk4Lw9rYHy1NqYXKbWXQ7fkxnUeo9e6tQeUaDZtvcS" target="_blank">View on IPFS</a></p>
+            <p><strong>Blockchain Verification:</strong> <a href="https://sepolia.etherscan.io/address/0x058976FD969398b868C2D88d9193B16Ad458aC67" target="_blank">View on Sepolia Explorer</a></p>
+            
+            <button onclick="loadExample()" style="background: #17a2b8; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                📥 Load Example Hash for Verification
+            </button>
+        </div>
+        
+        <div class="result-section">
+            <h3>ℹ️ How This Works</h3>
+            <ol>
+                <li><strong>Upload File:</strong> Choose any file to calculate its SHA-256 hash</li>
+                <li><strong>Hash Calculation:</strong> The tool calculates the unique fingerprint of your file</li>
+                <li><strong>Verification:</strong> Compare with expected hash to verify file integrity</li>
+                <li><strong>SABZA Process:</strong> Project owners submit expected hash, validators calculate actual hash</li>
+                <li><strong>Blockchain Storage:</strong> Both hashes are stored immutably on blockchain</li>
+            </ol>
+            
+            <p><strong>Security Note:</strong> All calculations happen in your browser. Files are not uploaded to any server.</p>
+        </div>
+    </div>
+
+    <script>
+        let calculatedHash = '';
+        
+        // Handle file upload
+        function handleFile(file) {
+            if (!file) return;
+            
+            // Show file info
+            document.getElementById('fileInfo').style.display = 'block';
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('fileType').textContent = file.type || 'Unknown';
+            document.getElementById('fileModified').textContent = new Date(file.lastModified).toLocaleString();
+            
+            // Calculate hash
+            calculateSHA256(file);
+        }
+        
+        // Calculate SHA-256 hash
+        async function calculateSHA256(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+                
+                calculatedHash = hashHex;
+                document.getElementById('hashResult').textContent = hashHex;
+                
+                // Auto-compare if expected hash is entered
+                compareHashes();
+                
+            } catch (error) {
+                document.getElementById('hashResult').textContent = 'Error calculating hash: ' + error.message;
+            }
+        }
+        
+        // Compare hashes
+        function compareHashes() {
+            const expectedHash = document.getElementById('expectedHash').value.trim().toLowerCase();
+            const resultDiv = document.getElementById('verificationResult');
+            
+            if (!expectedHash || !calculatedHash) {
+                resultDiv.innerHTML = '';
+                return;
+            }
+            
+            const match = expectedHash === calculatedHash.toLowerCase();
+            
+            if (match) {
+                resultDiv.innerHTML = `
+                    <div class="verify-result match">
+                        ✅ HASH MATCH! File integrity verified.
+                        <div style="margin-top: 8px; font-size: 14px;">
+                            The calculated hash matches the expected hash perfectly. This confirms the file hasn't been modified.
+                        </div>
+                    </div>
+                `;
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="verify-result no-match">
+                        ❌ HASH MISMATCH! Files don't match.
+                        <div style="margin-top: 8px; font-size: 14px;">
+                            The calculated hash doesn't match the expected hash. This indicates the file may have been modified.
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Copy hash to clipboard
+        function copyHash() {
+            navigator.clipboard.writeText(calculatedHash).then(() => {
+                const btn = event.target;
+                const original = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = original, 2000);
+            });
+        }
+        
+        // Load example hash
+        function loadExample() {
+            document.getElementById('expectedHash').value = '71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd';
+            compareHashes();
+        }
+        
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Drag and drop functionality
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+    </script>
+</body>
+</html> 

@@ -1,6 +1,60 @@
 // scripts/quick-test-fixed.js - Working test script
 const { ethers } = require("hardhat");
+const axios = require('axios');
 const crypto = require('crypto');
+
+async function uploadToIPFS(projectData) {
+  const jsonString = JSON.stringify(projectData, null, 2);
+  
+  try {
+    // Use Pinata IPFS API
+    const pinataApiKey = 'e10a02a6d76e35d2d7c8';
+    const pinataSecretApiKey = '4d72f6c367603be5082a344da6f96244f86f9e9c2de292a0a93ea94686bf1123';
+    
+    const FormData = require('form-data');
+    const form = new FormData();
+    
+    // Create a readable stream from the JSON string
+    const Readable = require('stream').Readable;
+    const stream = new Readable();
+    stream.push(jsonString);
+    stream.push(null);
+    
+    form.append('file', stream, {
+      filename: 'project-metadata.json',
+      contentType: 'application/json'
+    });
+    
+    const pinataMetadata = JSON.stringify({
+      name: `Project-${projectData.tokenSymbol}-${Date.now()}`,
+      keyvalues: {
+        projectType: 'SABZA_Validation',
+        tokenSymbol: projectData.tokenSymbol
+      }
+    });
+    form.append('pinataMetadata', pinataMetadata);
+    
+    const response = await axios.post('https://api.pinata.cloud/pinning/pinFileToIPFS', form, {
+      headers: {
+        ...form.getHeaders(),
+        'pinata_api_key': pinataApiKey,
+        'pinata_secret_api_key': pinataSecretApiKey,
+      }
+    });
+    
+    console.log("✅ Successfully uploaded to Pinata IPFS!");
+    console.log("📋 IPFS Hash:", response.data.IpfsHash);
+    console.log("🔗 IPFS URL:", `https://gateway.pinata.cloud/ipfs/${response.data.IpfsHash}`);
+    
+    return response.data.IpfsHash;
+  } catch (error) {
+    console.log("⚠️  Pinata IPFS upload failed, using mock CID for testing");
+    console.log("   Error:", error.message);
+    // Generate a mock CID for testing when IPFS is not available
+    const hash = crypto.createHash('sha256').update(jsonString).digest('hex');
+    return `QmMock${hash.substring(0, 40)}`; // Mock CID format
+  }
+}
 
 async function quickTest() {
   try {
@@ -31,29 +85,58 @@ async function quickTest() {
       console.log("⚠️  Role might already be granted or deployer is admin");
     }
     
-    // Simple test data (no IPFS)
+    // Real project data for IPFS upload
     const projectData = {
-      name: "Test Solar Project",
-      description: "Test project for validation",
-      tokenSymbol: "TST"
+      name: "Solar Clean Energy Initiative 2024",
+      description: "Revolutionary solar panel technology for clean energy generation with verified carbon credits",
+      tokenSymbol: "SOLAR24",
+      totalSupply: "10000000",
+      founders: ["Dr. Sarah Chen", "Michael Rodriguez"],
+      whitepaper: "https://example.com/solar-whitepaper.pdf",
+      website: "https://solarcleanenergy.com",
+      roadmap: {
+        "Q1 2025": "Initial R&D and prototype development",
+        "Q2 2025": "Pilot testing in 3 locations", 
+        "Q3 2025": "Commercial scale production",
+        "Q4 2025": "International expansion"
+      },
+      financials: {
+        fundingGoal: "5000000 USD",
+        useOfFunds: {
+          "R&D": "40%",
+          "Manufacturing": "30%", 
+          "Marketing": "20%",
+          "Operations": "10%"
+        }
+      },
+      compliance: {
+        jurisdiction: "Germany",
+        licenses: ["Solar Energy License", "Environmental Compliance"],
+        auditor: "GreenTech Auditors GmbH"
+      }
     };
     
-    // Create mock IPFS CID and hash
-    const mockCID = "QmTest123MockCIDForTesting";
+    // Upload to real IPFS using Pinata
+    console.log("🔄 Uploading project metadata to Pinata IPFS...");
+    const ipfsCID = await uploadToIPFS(projectData);
     const testHash = crypto.createHash('sha256').update(JSON.stringify(projectData)).digest('hex');
     
     console.log("🔄 Testing project submission...");
-    console.log("📋 Mock IPFS CID:", mockCID);
+    console.log("📋 IPFS CID:", ipfsCID);
     console.log("🔐 Test Hash:", testHash);
     
-    const projectId = "test_" + Date.now();
-    const metadata = JSON.stringify(projectData);
+    const projectId = "solar_" + Date.now();
+    const metadata = JSON.stringify({
+      name: projectData.name,
+      description: projectData.description,
+      tokenSymbol: projectData.tokenSymbol
+    });
     
     // Submit project
     console.log("📤 Submitting project to smart contract...");
     const tx = await contract.submitProject(
       projectId,
-      mockCID,
+      ipfsCID,
       testHash,
       projectData.tokenSymbol,
       metadata,
@@ -91,7 +174,7 @@ async function quickTest() {
       // Try ethers v6 first
       messageHash = ethers.solidityPackedKeccak256(
         ['string', 'string', 'string'],
-        [projectId, mockCID, testHash]
+        [projectId, ipfsCID, testHash]
       );
       signature = await deployer.signMessage(ethers.getBytes(messageHash));
     } catch (error) {
@@ -99,13 +182,13 @@ async function quickTest() {
         // Fallback to ethers v5
         messageHash = ethers.utils.solidityKeccak256(
           ['string', 'string', 'string'],
-          [projectId, mockCID, testHash]
+          [projectId, ipfsCID, testHash]
         );
         signature = await deployer.signMessage(ethers.utils.arrayify(messageHash));
       } catch (error2) {
         // Manual approach
         const encoder = ethers.AbiCoder.defaultAbiCoder();
-        const encoded = encoder.encode(['string', 'string', 'string'], [projectId, mockCID, testHash]);
+        const encoded = encoder.encode(['string', 'string', 'string'], [projectId, ipfsCID, testHash]);
         messageHash = ethers.keccak256(encoded);
         signature = await deployer.signMessage(ethers.toBeArray(messageHash));
       }
@@ -166,6 +249,8 @@ async function quickTest() {
     console.log("- Project ID:", projectId);
     console.log("- Token Symbol:", projectData.tokenSymbol);
     console.log("- Status: Tokenized");
+    console.log("- IPFS CID:", ipfsCID);
+    console.log("- IPFS URL:", `https://gateway.pinata.cloud/ipfs/${ipfsCID}`);
     console.log("- Submit TX:", tx.hash);
     console.log("- Validate TX:", tx2.hash);
     console.log("- Tokenize TX:", tx3.hash);

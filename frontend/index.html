@@ -332,6 +332,168 @@
         .hidden {
             display: none;
         }
+        
+        /* Hash verification styles */
+        .hash-comparison {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .hash-comparison-section {
+            border: 2px solid #dee2e6;
+            transition: border-color 0.3s;
+        }
+        
+        .hash-comparison-section:hover {
+            border-color: #667eea;
+        }
+        
+        .hash-value {
+            background: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #dee2e6;
+            margin-top: 5px;
+        }
+        
+        .expected-hash {
+            border-left: 4px solid #007bff;
+        }
+        
+        .actual-hash {
+            border-left: 4px solid #28a745;
+        }
+        
+        .hash-mismatch .actual-hash {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .hash-match-status {
+            font-size: 14px;
+            font-weight: 600;
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .hash-mismatch-warning {
+            animation: shake 0.6s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        /* Enhanced status badges for hash verification */
+        .status-badge.hash-verified {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .status-badge.hash-mismatch {
+            background: linear-gradient(45deg, #dc3545, #e83c7a);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3); }
+            50% { box-shadow: 0 4px 16px rgba(220, 53, 69, 0.6); }
+            100% { box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3); }
+        }
+        
+        /* Manual verification form styles */
+        .verification-form {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px solid #e1e5e9;
+        }
+        
+        .form-row {
+            margin-bottom: 25px;
+        }
+        
+        .form-row label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: monospace;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: #999;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .verify-button {
+            width: 100%;
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .verify-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .verify-button:active {
+            transform: translateY(0);
+        }
+        
+        .verification-result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+        
+        .verification-success {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            color: #155724;
+        }
+        
+        .verification-error {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -349,6 +511,7 @@
             <div class="tab active" onclick="switchTab('search')">🔍 Search Projects</div>
             <div class="tab" onclick="switchTab('validated')">✅ Validated Projects</div>
             <div class="tab" onclick="switchTab('pending')">⏳ Pending Projects</div>
+            <div class="tab" onclick="switchTab('verify')">🔐 Manual Verification</div>
         </div>
         
         <div id="searchTab" class="tab-content">
@@ -376,6 +539,34 @@
             <div class="search-section">
                 <h2>Pending SABZA Validation</h2>
                 <button onclick="loadPendingProjects()" class="btn btn-primary">Refresh Pending Projects</button>
+            </div>
+        </div>
+        
+        <div id="verifyTab" class="tab-content hidden">
+            <div class="search-section">
+                <h2>🔐 Manual Project Verification</h2>
+                <p style="color: #666; margin-bottom: 30px;">Verify project details against the blockchain smart contract</p>
+                
+                <div class="verification-form">
+                    <div class="form-row">
+                        <label for="verifyProjectId">Project ID:</label>
+                        <input type="text" id="verifyProjectId" class="form-input" placeholder="Enter project ID" />
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="verifyIpfsUrl">IPFS URL (e.g. ipfs://Qm...):</label>
+                        <input type="text" id="verifyIpfsUrl" class="form-input" placeholder="Enter IPFS URL or CID" />
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="verifySha256Hash">SHA-256 Metadata Hash:</label>
+                        <input type="text" id="verifySha256Hash" class="form-input" placeholder="Enter SHA-256 hash" />
+                    </div>
+                    
+                    <button onclick="manualVerifyProject()" class="btn btn-verify verify-button">
+                        🔍 Submit to Smart Contract
+                    </button>
+                </div>
             </div>
         </div>
         
