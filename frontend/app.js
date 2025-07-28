@@ -356,7 +356,7 @@ function displayManualVerificationResult(project, verification, inputData, allMa
             <h3>${resultIcon} ${resultTitle}</h3>
             
             <div style="margin: 20px 0;">
-                <div><strong>Project Status:</strong> ${project.status}</div>
+                <div><strong>Read for the Tokenization:</strong> ${project.status}</div>
                 <div><strong>SABZA Validated:</strong> ${isValidated ? 'Yes' : 'No'}</div>
             </div>
             

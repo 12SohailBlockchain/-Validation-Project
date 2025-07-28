@@ -87,7 +87,7 @@ async function quickTest() {
     
     // Real project data for IPFS upload
     const projectData = {
-      name: "Solar Clean Energy Initiative 2024",
+      name: "Solar Clean Energy Initsdfsdfsdfsdfsdfsdfative 2024",
       description: "Revolutionary solar panel technology for clean energy generation with verified carbon credits",
       tokenSymbol: "SOLAR24",
       totalSupply: "10000000",
