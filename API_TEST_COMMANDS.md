@@ -8,9 +8,9 @@
 curl -X POST http://localhost:3000/api/verify/manual \
   -H "Content-Type: application/json" \
   -d '{
-    "projectId": "solar_1753173315014",
-    "ipfsCID": "QmdgWk4Lw9rYHy1NqYXKbWXQ7fkxnUeo9e6tQeUaDZtvcS",
-    "sha256Hash": "71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd"
+    "projectId": "solar_1754261007090",
+    "ipfsCID": "QmdasbFfSFeGyNduhD5Qu8RuqCyBKnLDWgkc3EYQxvtiFx",
+    "sha256Hash": "4b0f7f43dd5b0abce0bf0bc4e3b5d38eead57ee45d634965e984e204ed5c59da"
   }'
 ```
 
@@ -33,8 +33,8 @@ curl -X POST http://localhost:3000/api/verify/manual \
       "tokenSymbol": "SOLAR24",
       "status": "Tokenized",
       "ipfsCID": "QmdgWk4Lw9rYHy1NqYXKbWXQ7fkxnUeo9e6tQeUaDZtvcS",
-      "expectedSHA256Hash": "71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd",
-      "actualSHA256Hash": "71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd"
+        "expectedSHA256Hash": "4b0f7f43dd5b0abce0bf0bc4e3b5d38eead57ee45d634965e984e204ed5c59da",
+  "actualSHA256Hash": "4b0f7f43dd5b0abce0bf0bc4e3b5d38eead57ee45d634965e984e204ed5c59da"
     }
   }
 }
@@ -149,9 +149,9 @@ fetch('http://localhost:3000/api/verify/manual', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    projectId: 'solar_1753173315014',
-    ipfsCID: 'QmdgWk4Lw9rYHy1NqYXKbWXQ7fkxnUeo9e6tQeUaDZtvcS',
-    sha256Hash: '71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd'
+    projectId: 'solar_1754261007090',
+    ipfsCID: 'QmdasbFfSFeGyNduhD5Qu8RuqCyBKnLDWgkc3EYQxvtiFx',
+    sha256Hash: '4b0f7f43dd5b0abce0bf0bc4e3b5d38eead57ee45d634965e984e204ed5c59da'
   })
 })
 .then(response => response.json())

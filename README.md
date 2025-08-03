@@ -66,7 +66,7 @@ vercel --prod
 Project ID: solar_1753173315014
 Token Symbol: SOLAR24
 IPFS CID: QmdgWk4Lw9rYHy1NqYXKbWXQ7fkxnUeo9e6tQeUaDZtvcS
-Hash: 71abc320a1a206906c7749cab74d52a69ed4f31d2e48de4e76870e5ab7fdd2bd
+Hash: 4b0f7f43dd5b0abce0bf0bc4e3b5d38eead57ee45d634965e984e204ed5c59da
 Status: ✅ Tokenized
 ```
 
