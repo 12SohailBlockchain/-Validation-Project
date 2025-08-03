@@ -333,28 +333,34 @@ app.post('/api/verify/manual', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
-// Test provider connection before starting server
-provider.getBlockNumber()
-  .then(blockNumber => {
-    console.log("✅ Blockchain connection successful! Block:", blockNumber);
-    
-    app.listen(PORT, () => {
-      console.log(`🚀 SABZA Validation API server running on port ${PORT}`);
-      console.log(`📋 Contract Address: ${process.env.CONTRACT_ADDRESS}`);
-      console.log(`🔗 Provider: ${rpcUrl.substring(0, 50)}...`);
-      console.log(`🌐 Endpoints available:`);
-      console.log(`   GET /api/health - Health check & blockchain status`);
-      console.log(`   GET /api/project/token/:symbol - Get project by token symbol`);
-      console.log(`   GET /api/project/:id - Get project by ID`);
-      console.log(`   GET /api/verify/:projectId - Verify project proof`);
-      console.log(`   GET /api/projects/validated - Get all validated projects`);
-      console.log(`   GET /api/projects/status/:status - Get projects by status`);
-      console.log(`   GET /api/stats - Get platform statistics`);
-      console.log(`\n🎯 Test the connection: curl http://localhost:${PORT}/api/health`);
+// For local development only
+if (process.env.NODE_ENV !== 'production') {
+  // Test provider connection before starting server
+  provider.getBlockNumber()
+    .then(blockNumber => {
+      console.log("✅ Blockchain connection successful! Block:", blockNumber);
+      
+      app.listen(PORT, () => {
+        console.log(`🚀 SABZA Validation API server running on port ${PORT}`);
+        console.log(`📋 Contract Address: ${process.env.CONTRACT_ADDRESS}`);
+        console.log(`🔗 Provider: ${rpcUrl.substring(0, 50)}...`);
+        console.log(`🌐 Endpoints available:`);
+        console.log(`   GET /api/health - Health check & blockchain status`);
+        console.log(`   GET /api/project/token/:symbol - Get project by token symbol`);
+        console.log(`   GET /api/project/:id - Get project by ID`);
+        console.log(`   GET /api/verify/:projectId - Verify project proof`);
+        console.log(`   GET /api/projects/validated - Get all validated projects`);
+        console.log(`   GET /api/projects/status/:status - Get projects by status`);
+        console.log(`   GET /api/stats - Get platform statistics`);
+        console.log(`\n🎯 Test the connection: curl http://localhost:${PORT}/api/health`);
+      });
+    })
+    .catch(error => {
+      console.error("❌ Blockchain connection failed:", error.message);
+      console.log("💡 Please check your RPC URL and network connection");
+      process.exit(1);
     });
-  })
-  .catch(error => {
-    console.error("❌ Blockchain connection failed:", error.message);
-    console.log("💡 Please check your RPC URL and network connection");
-    process.exit(1);
-  });
+}
+
+// Export for Vercel (serverless functions)
+module.exports = app;
