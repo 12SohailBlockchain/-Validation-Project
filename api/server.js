@@ -8,40 +8,32 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Debug environment variables
-console.log("🔧 Debug: Environment variables loaded:");
-console.log("- CONTRACT_ADDRESS:", process.env.CONTRACT_ADDRESS ? "✅ Found" : "❌ Missing");
-console.log("- QUICKNODE_URL:", process.env.QUICKNODE_URL ? "✅ Found" : "❌ Missing");
-console.log("- PRIVATE_KEY:", process.env.PRIVATE_KEY ? "✅ Found" : "❌ Missing");
+// Global error handler to ensure JSON responses
+app.use((error, req, res, next) => {
+  console.error('Global error handler:', error.message);
+  res.status(500).json({
+    success: false,
+    message: error.message || 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+  });
+});
 
-// Contract setup with better RPC handling
-let provider;
-let rpcUrl;
+// Function to initialize blockchain connection
+function initializeBlockchain() {
+  // Try different RPC URL sources
+  let rpcUrl;
+  if (process.env.QUICKNODE_URL) {
+    rpcUrl = process.env.QUICKNODE_URL;
+  } else if (process.env.ALCHEMY_API_URL) {
+    rpcUrl = process.env.ALCHEMY_API_URL;
+  } else if (process.env.ALCHEMY_API_KEY) {
+    rpcUrl = `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`;
+  } else {
+    throw new Error("No RPC URL found in environment variables");
+  }
 
-// Try different RPC URL sources
-if (process.env.QUICKNODE_URL) {
-  rpcUrl = process.env.QUICKNODE_URL;
-  console.log("🌐 Using QuickNode RPC");
-} else if (process.env.ALCHEMY_API_URL) {
-  rpcUrl = process.env.ALCHEMY_API_URL;
-  console.log("🌐 Using Alchemy RPC");
-} else if (process.env.ALCHEMY_API_KEY) {
-  rpcUrl = `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`;
-  console.log("🌐 Using Alchemy RPC (constructed)");
-} else {
-  console.error("❌ No RPC URL found in environment variables!");
-  console.log("💡 Add QUICKNODE_URL to your .env file");
-  process.exit(1);
-}
-
-console.log("🔗 RPC URL:", rpcUrl.substring(0, 50) + "...");
-
-try {
-  provider = new ethers.JsonRpcProvider(rpcUrl);
-  console.log("✅ Provider created successfully");
-} catch (error) {
-  console.error("❌ Failed to create provider:", error.message);
-  process.exit(1);
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  return provider;
 }
 
 const contractABI = [
@@ -53,12 +45,14 @@ const contractABI = [
   "function verifyProjectProof(string memory _projectId) external view returns (bool isValid, string memory ipfsCID, string memory expectedHash, string memory actualHash, address sabzaValidator, uint8 status)"
 ];
 
-let contract;
-try {
-  contract = new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, provider);
-  console.log("✅ Contract connected successfully");
-} catch (error) {
-  console.error("❌ Failed to connect to contract:", error.message);
+// Function to get contract instance
+function getContract() {
+  if (!process.env.CONTRACT_ADDRESS) {
+    throw new Error("CONTRACT_ADDRESS not found in environment variables");
+  }
+  
+  const provider = initializeBlockchain();
+  return new ethers.Contract(process.env.CONTRACT_ADDRESS, contractABI, provider);
 }
 
 // Status enum mapping
@@ -109,13 +103,13 @@ function formatProject(project) {
 app.get('/api/health', async (req, res) => {
   try {
     // Test blockchain connection
+    const provider = initializeBlockchain();
     const blockNumber = await provider.getBlockNumber();
     res.json({
       success: true,
       message: "SABZA Validation API is running",
       timestamp: new Date().toISOString(),
-      contract: process.env.CONTRACT_ADDRESS,
-      provider: rpcUrl.substring(0, 50) + "...",
+      contract: process.env.CONTRACT_ADDRESS || "Not configured",
       blockNumber: blockNumber,
       network: "sepolia"
     });
@@ -131,6 +125,7 @@ app.get('/api/health', async (req, res) => {
 // Statistics endpoint
 app.get('/api/stats', async (req, res) => {
   try {
+    const contract = getContract();
     const pendingProjects = await contract.getProjectsByStatus(0);
     const validatedProjects = await contract.getProjectsByStatus(1);
     const tokenizedProjects = await contract.getProjectsByStatus(3);
@@ -158,6 +153,7 @@ app.get('/api/stats', async (req, res) => {
 // Get project by token symbol
 app.get('/api/project/token/:symbol', async (req, res) => {
   try {
+    const contract = getContract();
     const { symbol } = req.params;
     console.log(`🔍 Searching for token: ${symbol}`);
     
@@ -179,6 +175,7 @@ app.get('/api/project/token/:symbol', async (req, res) => {
 // Get project by ID
 app.get('/api/project/:id', async (req, res) => {
   try {
+    const contract = getContract();
     const { id } = req.params;
     console.log(`🔍 Searching for project: ${id}`);
     
@@ -200,6 +197,7 @@ app.get('/api/project/:id', async (req, res) => {
 // Get all validated projects
 app.get('/api/projects/validated', async (req, res) => {
   try {
+    const contract = getContract();
     const projects = await contract.getAllValidatedProjects();
     const formattedProjects = projects.map(formatProject);
     
@@ -229,6 +227,7 @@ app.get('/api/projects/status/:status', async (req, res) => {
       });
     }
     
+    const contract = getContract();
     const projects = await contract.getProjectsByStatus(statusCode);
     const formattedProjects = projects.map(formatProject);
     
@@ -249,6 +248,7 @@ app.get('/api/projects/status/:status', async (req, res) => {
 // Verify project proof
 app.get('/api/verify/:projectId', async (req, res) => {
   try {
+    const contract = getContract();
     const { projectId } = req.params;
     console.log(`🔐 Verifying proof for: ${projectId}`);
     
@@ -291,6 +291,7 @@ app.post('/api/verify/manual', async (req, res) => {
     console.log(`🔍 Manual verification for: ${projectId}`);
     
     // Get project from blockchain
+    const contract = getContract();
     const project = await contract.getProject(projectId);
     
     // Perform verification checks
@@ -331,35 +332,58 @@ app.post('/api/verify/manual', async (req, res) => {
   }
 });
 
+// Catch-all route for 404s
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API endpoint not found: ${req.method} ${req.originalUrl}`,
+    availableEndpoints: [
+      'GET /api/health',
+      'GET /api/stats', 
+      'GET /api/project/token/:symbol',
+      'GET /api/project/:id',
+      'GET /api/projects/validated',
+      'GET /api/projects/status/:status',
+      'GET /api/verify/:projectId',
+      'POST /api/verify/manual'
+    ]
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 
 // For local development only
 if (process.env.NODE_ENV !== 'production') {
-  // Test provider connection before starting server
-  provider.getBlockNumber()
-    .then(blockNumber => {
-      console.log("✅ Blockchain connection successful! Block:", blockNumber);
-      
-      app.listen(PORT, () => {
-        console.log(`🚀 SABZA Validation API server running on port ${PORT}`);
-        console.log(`📋 Contract Address: ${process.env.CONTRACT_ADDRESS}`);
-        console.log(`🔗 Provider: ${rpcUrl.substring(0, 50)}...`);
-        console.log(`🌐 Endpoints available:`);
-        console.log(`   GET /api/health - Health check & blockchain status`);
-        console.log(`   GET /api/project/token/:symbol - Get project by token symbol`);
-        console.log(`   GET /api/project/:id - Get project by ID`);
-        console.log(`   GET /api/verify/:projectId - Verify project proof`);
-        console.log(`   GET /api/projects/validated - Get all validated projects`);
-        console.log(`   GET /api/projects/status/:status - Get projects by status`);
-        console.log(`   GET /api/stats - Get platform statistics`);
-        console.log(`\n🎯 Test the connection: curl http://localhost:${PORT}/api/health`);
+  try {
+    // Test provider connection before starting server
+    const provider = initializeBlockchain();
+    provider.getBlockNumber()
+      .then(blockNumber => {
+        console.log("✅ Blockchain connection successful! Block:", blockNumber);
+        
+        app.listen(PORT, () => {
+          console.log(`🚀 SABZA Validation API server running on port ${PORT}`);
+          console.log(`📋 Contract Address: ${process.env.CONTRACT_ADDRESS}`);
+          console.log(`🌐 Endpoints available:`);
+          console.log(`   GET /api/health - Health check & blockchain status`);
+          console.log(`   GET /api/project/token/:symbol - Get project by token symbol`);
+          console.log(`   GET /api/project/:id - Get project by ID`);
+          console.log(`   GET /api/verify/:projectId - Verify project proof`);
+          console.log(`   GET /api/projects/validated - Get all validated projects`);
+          console.log(`   GET /api/projects/status/:status - Get projects by status`);
+          console.log(`   GET /api/stats - Get platform statistics`);
+          console.log(`\n🎯 Test the connection: curl http://localhost:${PORT}/api/health`);
+        });
+      })
+      .catch(error => {
+        console.error("❌ Blockchain connection failed:", error.message);
+        console.log("💡 Please check your RPC URL and network connection");
+        process.exit(1);
       });
-    })
-    .catch(error => {
-      console.error("❌ Blockchain connection failed:", error.message);
-      console.log("💡 Please check your RPC URL and network connection");
-      process.exit(1);
-    });
+  } catch (error) {
+    console.error("❌ Failed to initialize blockchain:", error.message);
+    process.exit(1);
+  }
 }
 
 // Export for Vercel (serverless functions)
